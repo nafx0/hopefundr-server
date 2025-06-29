@@ -89,10 +89,9 @@ app.put("/campaigns/:id", async (req, res) => {
 
   try {
     const { db } = await connectToDB();
-    const result = await db.collection("campaignsDB").updateOne(
-      { _id: new ObjectId(id) },
-      { $set: req.body }
-    );
+    const result = await db
+      .collection("campaignsDB")
+      .updateOne({ _id: new ObjectId(id) }, { $set: req.body });
 
     if (result.matchedCount === 0) return res.status(404).send("Not found");
 
@@ -142,6 +141,68 @@ app.get("/campaigns/email/:email", async (req, res) => {
     res.status(500).send("Internal server error");
   }
 });
+
+app.post("/donations", async (req, res) => {
+  try {
+    const { db } = await connectToDB();
+    const result = await db.collection("donationsDB").insertOne(req.body);
+    res.status(201).send(result);
+  } catch (err) {
+    console.error("POST /campaigns error:", err);
+    res.status(500).send("Internal server error");
+  }
+});
+
+app.get("/donations", async (req, res) => {
+  try {
+    const { db } = await connectToDB();
+    const result = await db.collection("donationsDB").find({}).toArray();
+    res.send(result);
+  } catch (err) {
+    console.error("DELETE /campaigns/:id error:", err);
+    res.status(500).send("Internal server error");
+  }
+});
+
+
+app.get("/donations/email/:email", async (req, res) => {
+  const email = req.params.email;
+  try {
+    const { db } = await connectToDB();
+    const result = await db
+      .collection("donationsDB")
+      .find({ email })
+      .toArray();
+
+    if (!result.length) return res.status(404).send("No donations found");
+
+    res.send(result);
+  } catch (err) {
+    console.error("GET /donations/email/:email error:", err);
+    res.status(500).send("Internal server error");
+  }
+});
+
+app.get("/donations/campaign/:campaignId", async (req, res) => {
+  const campaignId = req.params.campaignId;
+
+  try {
+    const { db } = await connectToDB();
+    const result = await db
+      .collection("donationsDB")
+      .find({ campaignId }) // assuming campaignId is stored as a string
+      .toArray();
+
+    if (!result.length) return res.status(404).send("No donations for this campaign");
+
+    res.send(result);
+  } catch (err) {
+    console.error("GET /donations/campaign/:campaignId error:", err);
+    res.status(500).send("Internal server error");
+  }
+});
+
+
 
 module.exports = app;
 module.exports.handler = serverless(app);
